@@ -1,0 +1,22 @@
+# Environment variables
+.env.example
+.env.local
+.env.*.local
+
+# Go
+bin/
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+API_DOCUMENTATION.md
+FEATURES.md
+PROJECT_SUMMARY.md
+SAMPLE_REQUESTS.md
