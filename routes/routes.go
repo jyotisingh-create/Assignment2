@@ -27,6 +27,9 @@ func SetupRoutes(router *gin.Engine) {
 	router.POST("/accounts/:id/withdraw", accountCtrl.Withdraw)
 	router.GET("/accounts/:id/transactions", accountCtrl.GetTransactions)
 	router.GET("/accounts/:id/balance", accountCtrl.GetBalance)
+	router.POST("/accounts/:id/holders", accountCtrl.AddAccountHolder)
+	router.DELETE("/accounts/:id/holders/:customer_id", accountCtrl.RemoveAccountHolder)
+	router.GET("/accounts/:id/holders", accountCtrl.GetAccountHolders)
 
 	loanCtrl := controllers.NewLoanController()
 	router.POST("/loans", loanCtrl.TakeLoan)

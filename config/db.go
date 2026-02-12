@@ -45,6 +45,7 @@ func AutoMigrate() error {
 		&models.Branch{},
 		&models.Customer{},
 		&models.SavingsAccount{},
+		&models.CustomerAccount{},
 		&models.Transaction{},
 		&models.Loan{},
 		&models.LoanPayment{},

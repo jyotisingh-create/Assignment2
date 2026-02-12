@@ -3,13 +3,13 @@ package models
 type TransactionType string
 
 const (
-	DEPOSIT  TransactionType = "DEPOSIT"
-	WITHDRAW TransactionType = "WITHDRAW"
+	CREDIT TransactionType = "credit"
+	DEBIT  TransactionType = "debit"
 )
 
 type Transaction struct {
 	ID        uint            `gorm:"primaryKey" json:"id"`
-	AccountID uint            `gorm:"index" json:"account_id" binding:"required"`
+	AccountID uint            `gorm:"index;not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"account_id" binding:"required"`
 	Type      TransactionType `json:"type" binding:"required"`
 	Amount    float64         `json:"amount" binding:"required"`
 	CreatedAt int64           `json:"created_at"`

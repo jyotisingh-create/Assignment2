@@ -10,9 +10,8 @@ type AccountService struct{}
 
 func (s *AccountService) OpenSavingsAccount(customerID uint) (*models.SavingsAccount, error) {
 	account := &models.SavingsAccount{
-		CustomerID: customerID,
-		Balance:    0,
-		CreatedAt:  0,
+		Balance:   0,
+		CreatedAt: 0,
 	}
 
 	var customer models.Customer
@@ -20,12 +19,25 @@ func (s *AccountService) OpenSavingsAccount(customerID uint) (*models.SavingsAcc
 		return nil, errors.New("customer not found")
 	}
 
-	var existingAccount models.SavingsAccount
-	if err := config.DB.Where("customer_id = ?", customerID).First(&existingAccount).Error; err == nil {
-		return nil, errors.New("savings account already exists for this customer")
+	tx := config.DB.Begin()
+	if err := tx.Create(account).Error; err != nil {
+		tx.Rollback()
+		return nil, err
 	}
 
-	if err := config.DB.Create(account).Error; err != nil {
+	custAcc := &models.CustomerAccount{
+		CustomerID: customerID,
+		AccountID:  account.ID,
+		HolderRole: models.PRIMARY_HOLDER,
+		CreatedAt:  0,
+	}
+
+	if err := tx.Create(custAcc).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
 		return nil, err
 	}
 
@@ -60,7 +72,7 @@ func (s *AccountService) Deposit(accountID uint, amount float64) (*models.Saving
 
 	transaction := &models.Transaction{
 		AccountID: accountID,
-		Type:      models.DEPOSIT,
+		Type:      models.CREDIT,
 		Amount:    amount,
 		CreatedAt: 0,
 	}
@@ -100,7 +112,7 @@ func (s *AccountService) Withdraw(accountID uint, amount float64) (*models.Savin
 
 	transaction := &models.Transaction{
 		AccountID: accountID,
-		Type:      models.WITHDRAW,
+		Type:      models.DEBIT,
 		Amount:    amount,
 		CreatedAt: 0,
 	}
@@ -130,4 +142,78 @@ func (s *AccountService) GetBalance(accountID uint) (float64, error) {
 		return 0, errors.New("account not found")
 	}
 	return account.Balance, nil
+}
+
+func (s *AccountService) AddAccountHolder(accountID uint, customerID uint, holderRole string) (*models.CustomerAccount, error) {
+
+	var account models.SavingsAccount
+	if err := config.DB.First(&account, accountID).Error; err != nil {
+		return nil, errors.New("account not found")
+	}
+
+	var customer models.Customer
+	if err := config.DB.First(&customer, customerID).Error; err != nil {
+		return nil, errors.New("customer not found")
+	}
+
+	var existing models.CustomerAccount
+	if err := config.DB.Where("customer_id = ? AND account_id = ?", customerID, accountID).First(&existing).Error; err == nil {
+		return nil, errors.New("customer is already a holder of this account")
+	}
+
+	custAcc := &models.CustomerAccount{
+		CustomerID: customerID,
+		AccountID:  accountID,
+		HolderRole: holderRole,
+		CreatedAt:  0,
+	}
+
+	if err := config.DB.Create(custAcc).Error; err != nil {
+		return nil, err
+	}
+
+	return custAcc, nil
+}
+
+func (s *AccountService) RemoveAccountHolder(accountID uint, customerID uint) error {
+
+	var account models.SavingsAccount
+	if err := config.DB.First(&account, accountID).Error; err != nil {
+		return errors.New("account not found")
+	}
+
+	var custAcc models.CustomerAccount
+	if err := config.DB.Where("customer_id = ? AND account_id = ?", customerID, accountID).First(&custAcc).Error; err != nil {
+		return errors.New("customer is not a holder of this account")
+	}
+
+	var count int64
+	if err := config.DB.Model(&models.CustomerAccount{}).Where("account_id = ?", accountID).Count(&count).Error; err != nil {
+		return err
+	}
+
+	if count <= 1 {
+		return errors.New("cannot remove the last holder from an account")
+	}
+
+	if err := config.DB.Delete(&custAcc).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AccountService) GetAccountHolders(accountID uint) ([]models.CustomerAccount, error) {
+
+	var account models.SavingsAccount
+	if err := config.DB.First(&account, accountID).Error; err != nil {
+		return nil, errors.New("account not found")
+	}
+
+	var holders []models.CustomerAccount
+	if err := config.DB.Where("account_id = ?", accountID).Preload("Customer").Find(&holders).Error; err != nil {
+		return nil, err
+	}
+
+	return holders, nil
 }
