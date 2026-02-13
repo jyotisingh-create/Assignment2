@@ -11,7 +11,7 @@ const (
 
 type Loan struct {
 	ID              uint          `gorm:"primaryKey" json:"id"`
-	CustomerID      uint          `gorm:"index" json:"customer_id" binding:"required"`
+	CustomerID      uint          `gorm:"index;not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"customer_id" binding:"required"`
 	PrincipalAmount float64       `json:"principal_amount" binding:"required"`
 	InterestRate    float64       `json:"interest_rate" gorm:"default:12"`
 	LoanType        string        `gorm:"type:varchar(30)" json:"loan_type" binding:"required"`

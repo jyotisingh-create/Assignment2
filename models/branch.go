@@ -2,7 +2,7 @@ package models
 
 type Branch struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
-	BankID    uint       `gorm:"index" json:"bank_id" binding:"required"`
+	BankID    uint       `gorm:"index;not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"bank_id" binding:"required"`
 	Name      string     `json:"name" binding:"required"`
 	Address   string     `json:"address" binding:"required"`
 	CreatedAt int64      `json:"created_at"`

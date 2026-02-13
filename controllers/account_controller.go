@@ -134,3 +134,67 @@ func (ac *AccountController) GetBalance(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"balance": balance})
 }
+
+func (ac *AccountController) AddAccountHolder(c *gin.Context) {
+	accountID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	var request struct {
+		CustomerID uint   `json:"customer_id" binding:"required"`
+		HolderRole string `json:"holder_role" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	holder, err := ac.service.AddAccountHolder(uint(accountID), request.CustomerID, request.HolderRole)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, holder)
+}
+
+func (ac *AccountController) RemoveAccountHolder(c *gin.Context) {
+	accountID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	customerID, err := strconv.ParseUint(c.Param("customer_id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid customer ID"})
+		return
+	}
+
+	err = ac.service.RemoveAccountHolder(uint(accountID), uint(customerID))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}
+
+func (ac *AccountController) GetAccountHolders(c *gin.Context) {
+	accountID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	holders, err := ac.service.GetAccountHolders(uint(accountID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, holders)
+}

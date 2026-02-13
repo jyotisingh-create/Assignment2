@@ -55,7 +55,7 @@ func (cc *CustomerController) GetCustomer(c *gin.Context) {
 	}
 
 	var customer models.Customer
-	if err := config.DB.Preload("SavingsAccount").Preload("Loans").First(&customer, uint(customerID)).Error; err != nil {
+	if err := config.DB.Preload("CustomerAccounts.Account").Preload("Loans").First(&customer, uint(customerID)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
 		return
 	}
